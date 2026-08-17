@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', 'Outfit', system-ui, -apple-system, sans-serif;
+    background-color: #F7F9F6;
+    color: #2D4628;
+  }
+}
+
+.font-serif {
+  font-family: 'Fraunces', Georgia, serif;
+}
+
+.font-handwritten {
+  font-family: 'Caveat', cursive;
+}
+
+.font-display {
+  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+}
+
+/* Bento Theme Colors & Radius Utilities */
+:root {
+  --color-bento-bg: #F7F9F6;
+  --color-bento-dark: #2D4628;
+  --color-bento-primary: #7FB069;
+  --color-bento-primary-hover: #8cc474;
+  --color-bento-accent-bg: #DCE6D5;
+  --color-bento-border: #E2E8DF;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F7F9F6;
+}
+::-webkit-scrollbar-thumb {
+  background: #DCE6D5;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #7FB069;
+}

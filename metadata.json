@@ -1,0 +1,6 @@
+{
+  "name": "Natural Fruit - Sopas Detox",
+  "description": "Aplicativo oficial de pedidos da Natural Fruit - Linha de Sopas Detox 100% naturais e congeladas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
