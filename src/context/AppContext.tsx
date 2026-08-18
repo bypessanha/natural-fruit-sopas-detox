@@ -300,8 +300,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
 
-  const deliveryFee = subtotal >= settings.freeDeliveryAbove || subtotal === 0 ? 0 : settings.deliveryFee;
-
+const deliveryFee = 0;
   let discount = 0;
   if (appliedCoupon && subtotal > 0) {
     if (appliedCoupon.discountPercent) {
