@@ -311,7 +311,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }
 
-  const total = Math.max(0, subtotal - discount + (cart.length > 0 ? deliveryFee : 0));
+  const total = Math.max(0, subtotal - discount);
 
   const applyCoupon = (code: string) => {
     const trimmed = code.trim().toUpperCase();
