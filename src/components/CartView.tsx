@@ -655,7 +655,7 @@ export const CartView: React.FC = () => {
                 {deliveryType === 'retirada' ? (
                   <span className="text-[#7FB069] font-bold">Retirada Grátis</span>
                 ) : deliveryFee === 0 ? (
-                  <span className="text-[#7FB069] font-bold">GRÁTIS (&gt; R$ 140)</span>
+                  <span className="text-amber-600 font-bold">A CONFIRMAR</span>
                 ) : (
                   <span className="font-bold text-[#2D4628]">{formatCurrency(deliveryFee)}</span>
                 )}
@@ -664,7 +664,7 @@ export const CartView: React.FC = () => {
               <div className="pt-3 border-t border-[#E2E8DF] flex justify-between items-baseline">
                 <span className="text-sm font-bold text-[#2D4628]">Total a Pagar:</span>
                 <span className="text-2xl font-bold text-[#2D4628]">
-                  {formatCurrency(deliveryType === 'retirada' ? total - deliveryFee : total)}
+                 {formatCurrency(subtotal - discount)}
                 </span>
               </div>
             </div>
