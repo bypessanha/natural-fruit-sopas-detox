@@ -1,21 +1,23 @@
 {
-  "name": "Natural Fruit - Sopas Detox",
+  "name": "Natural Fruit – Sopas Detox",
   "short_name": "Natural Fruit",
-  "description": "Cardápio e pedidos online de Sopas Detox 100% naturais e congeladas.",
+  "description": "Pedidos de sopas artesanais da Natural Fruit",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F7F9F6",
-  "theme_color": "#2D4628",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "lang": "pt-BR",
+  "scope": "/",
   "icons": [
     {
-      "src": "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=192&q=80",
+      "src": "/pwa-192x192.png",
       "sizes": "192x192",
-      "type": "image/jpeg"
+      "type": "image/png"
     },
     {
-      "src": "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=512&q=80",
+      "src": "/pwa-512x512.png",
       "sizes": "512x512",
-      "type": "image/jpeg"
+      "type": "image/png"
     }
   ]
 }
