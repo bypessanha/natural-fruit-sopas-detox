@@ -9,11 +9,13 @@ export function formatCurrency(value: number): string {
 
 export function formatPhone(phone: string): string {
   const cleaned = phone.replace(/\D/g, '');
+
   if (cleaned.length === 11) {
     return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7)}`;
   } else if (cleaned.length === 10) {
     return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 6)}-${cleaned.slice(6)}`;
   }
+
   return phone;
 }
 
@@ -45,9 +47,23 @@ export function buildWhatsAppOrderMessage(
   };
 
   const addr = order.customer.address;
-  const addressText = `${addr.street}, nº ${addr.number} - Bairro ${addr.neighborhood}, ${addr.city}${
-    addr.complement ? ` (${addr.complement})` : ''
-  }${addr.referencePoint ? `\n📍 Ref: ${addr.referencePoint}` : ''}`;
+
+  // Detecta se o pedido é para retirada no local.
+  const isPickup =
+    addr.street?.toLowerCase().includes('retirada no local') ||
+    addr.neighborhood?.toLowerCase().includes('loja natural fruit');
+
+  const addressText = isPickup
+    ? 'Retirada no Local — Loja Natural Fruit'
+    : `${addr.street}, nº ${addr.number} - Bairro ${addr.neighborhood}, ${addr.city}${
+        addr.complement ? ` (${addr.complement})` : ''
+      }${addr.referencePoint ? `\n📍 Ref: ${addr.referencePoint}` : ''}`;
+
+  const deliveryText = isPickup
+    ? 'GRÁTIS'
+    : order.deliveryFee === 0
+      ? 'A CONFIRMAR'
+      : formatCurrency(order.deliveryFee);
 
   return `🍲 *NOVO PEDIDO - ${settings.storeName.toUpperCase()}* 🍲
 ━━━━━━━━━━━━━━━━━━━━
@@ -63,20 +79,37 @@ ${itemsText}
 
 ━━━━━━━━━━━━━━━━━━━━
 💰 *Subtotal:* ${formatCurrency(order.subtotal)}
-${order.discount > 0 ? `🏷️ *Desconto:* -${formatCurrency(order.discount)} (${order.couponCode || 'Cupom'})\n` : ''}🛵 *Taxa de Entrega:* ${order.deliveryFee === 0 ? 'A CONFIRMAR' : formatCurrency(order.deliveryFee)}
+${
+  order.discount > 0
+    ? `🏷️ *Desconto:* -${formatCurrency(order.discount)} (${order.couponCode || 'Cupom'})\n`
+    : ''
+}🛵 *Taxa de Entrega:* ${deliveryText}
 💵 *TOTAL A PAGAR:* *${formatCurrency(order.total)}*
 
-💳 *Forma de Pagamento:* ${paymentNames[order.customer.paymentMethod] || order.customer.paymentMethod}
-${order.notes ? `\n📝 *Observações Gerais:* ${order.notes}` : ''}
+💳 *Forma de Pagamento:* ${
+    paymentNames[order.customer.paymentMethod] ||
+    order.customer.paymentMethod
+  }
+${
+  order.notes
+    ? `\n📝 *Observações Gerais:* ${order.notes}`
+    : ''
+}
 ━━━━━━━━━━━━━━━━━━━━
 _Pedido realizado pelo aplicativo Natural Fruit Linha Sopas Detox!_ 🌱`;
 }
 
 export function getWhatsAppLink(phone: string, text: string): string {
   const cleanedPhone = phone.replace(/\D/g, '');
+
   // Default to 55 (Brazil) if country code not included
-  const fullPhone = cleanedPhone.startsWith('55') ? cleanedPhone : `55${cleanedPhone}`;
-  return `https://api.whatsapp.com/send?phone=${fullPhone}&text=${encodeURIComponent(text)}`;
+  const fullPhone = cleanedPhone.startsWith('55')
+    ? cleanedPhone
+    : `55${cleanedPhone}`;
+
+  return `https://api.whatsapp.com/send?phone=${fullPhone}&text=${encodeURIComponent(
+    text
+  )}`;
 }
 
 export function generateOrderNumber(): number {
