@@ -63,7 +63,7 @@ ${itemsText}
 
 ━━━━━━━━━━━━━━━━━━━━
 💰 *Subtotal:* ${formatCurrency(order.subtotal)}
-${order.discount > 0 ? `🏷️ *Desconto:* -${formatCurrency(order.discount)} (${order.couponCode || 'Cupom'})\n` : ''}🛵 *Taxa de Entrega:* ${order.deliveryFee === 0 ? 'GRÁTIS' : formatCurrency(order.deliveryFee)}
+${order.discount > 0 ? `🏷️ *Desconto:* -${formatCurrency(order.discount)} (${order.couponCode || 'Cupom'})\n` : ''}🛵 *Taxa de Entrega:* ${order.deliveryFee === 0 ? 'A CONFIRMAR' : formatCurrency(order.deliveryFee)}
 💵 *TOTAL A PAGAR:* *${formatCurrency(order.total)}*
 
 💳 *Forma de Pagamento:* ${paymentNames[order.customer.paymentMethod] || order.customer.paymentMethod}
