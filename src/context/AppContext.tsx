@@ -153,6 +153,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const saved = localStorage.getItem('natural_fruit_orders');
       if (saved) return JSON.parse(saved);
+
       // Generate one initial sample order for demonstration
       return [
         {
@@ -253,7 +254,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('natural_fruit_settings', JSON.stringify(settings));
   }, [settings]);
 
-  const showToast = (message: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {
+  const showToast = (
+    message: string,
+    type: 'success' | 'info' | 'warning' | 'error' = 'success'
+  ) => {
     const id = Math.random().toString(36).substring(2, 9);
     setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => {
@@ -266,13 +270,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const existingIdx = prev.findIndex(
         (item) => item.product.id === product.id && item.observation === observation
       );
+
       if (existingIdx > -1) {
         const next = [...prev];
         next[existingIdx].quantity += quantity;
         return next;
       }
+
       return [...prev, { product, quantity, observation }];
     });
+
     showToast(`Adicionado: ${product.name} (${quantity}x)`, 'success');
   };
 
@@ -286,6 +293,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       removeFromCart(productId);
       return;
     }
+
     setCart((prev) =>
       prev.map((item) => (item.product.id === productId ? { ...item, quantity } : item))
     );
@@ -298,10 +306,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const subtotal = cart.reduce(
+    (sum, item) => sum + item.product.price * item.quantity,
+    0
+  );
 
-const deliveryFee = 0;
+  const deliveryFee = 0;
+
   let discount = 0;
+
   if (appliedCoupon && subtotal > 0) {
     if (appliedCoupon.discountPercent) {
       discount = (subtotal * appliedCoupon.discountPercent) / 100;
@@ -314,19 +327,33 @@ const deliveryFee = 0;
 
   const applyCoupon = (code: string) => {
     const trimmed = code.trim().toUpperCase();
-    const found = coupons.find((c) => c.code.toUpperCase() === trimmed && c.active);
+
+    const found = coupons.find(
+      (c) => c.code.toUpperCase() === trimmed && c.active
+    );
+
     if (!found) {
-      return { success: false, message: 'Cupom inválido ou expirado.' };
+      return {
+        success: false,
+        message: 'Cupom inválido ou expirado.',
+      };
     }
+
     if (found.minOrderValue && subtotal < found.minOrderValue) {
       return {
         success: false,
         message: `Valor mínimo para este cupom é de R$ ${found.minOrderValue.toFixed(2)}.`,
       };
     }
+
     setAppliedCoupon(found);
+
     showToast(`Cupom ${found.code} aplicado com sucesso!`, 'success');
-    return { success: true, message: 'Cupom aplicado!' };
+
+    return {
+      success: true,
+      message: 'Cupom aplicado!',
+    };
   };
 
   const removeCoupon = () => {
@@ -362,6 +389,7 @@ const deliveryFee = 0;
 
     setOrders((prev) => [newOrder, ...prev]);
     clearCart();
+
     return newOrder;
   };
 
@@ -369,15 +397,24 @@ const deliveryFee = 0;
     setOrders((prev) =>
       prev.map((o) => (o.id === orderId ? { ...o, status } : o))
     );
-    showToast(`Status do pedido atualizado para: ${status.toUpperCase()}`, 'info');
+
+    showToast(
+      `Status do pedido atualizado para: ${status.toUpperCase()}`,
+      'info'
+    );
   };
 
   const repeatOrder = (order: Order) => {
     order.items.forEach((item) => {
       addToCart(item.product, item.quantity, item.observation);
     });
+
     setActiveTab('cart');
-    showToast('Itens do pedido foram adicionados ao seu carrinho!', 'success');
+
+    showToast(
+      'Itens do pedido foram adicionados ao seu carrinho!',
+      'success'
+    );
   };
 
   const updateUserProfile = (data: Partial<UserProfile>) => {
@@ -385,26 +422,35 @@ const deliveryFee = 0;
     showToast('Perfil atualizado com sucesso!', 'success');
   };
 
-  const saveAddress = (addressData: Omit<DeliveryAddress, 'id'>, id?: string) => {
+  const saveAddress = (
+    addressData: Omit<DeliveryAddress, 'id'>,
+    id?: string
+  ) => {
     setUser((prev) => {
       let nextAddresses: DeliveryAddress[];
+
       if (id) {
-        nextAddresses = prev.addresses.map((a) => (a.id === id ? { ...addressData, id } : a));
+        nextAddresses = prev.addresses.map((a) =>
+          a.id === id ? { ...addressData, id } : a
+        );
       } else {
         const newAddr: DeliveryAddress = {
           ...addressData,
           id: `addr_${Date.now()}`,
         };
+
         nextAddresses = [...prev.addresses, newAddr];
       }
+
       return {
         ...prev,
         addresses: nextAddresses,
         defaultAddressId: addressData.isDefault
-          ? (id || nextAddresses[nextAddresses.length - 1].id)
+          ? id || nextAddresses[nextAddresses.length - 1].id
           : prev.defaultAddressId,
       };
     });
+
     showToast('Endereço salvo com sucesso!', 'success');
   };
 
@@ -412,18 +458,25 @@ const deliveryFee = 0;
     setUser((prev) => ({
       ...prev,
       addresses: prev.addresses.filter((a) => a.id !== id),
-      defaultAddressId: prev.defaultAddressId === id ? undefined : prev.defaultAddressId,
+      defaultAddressId:
+        prev.defaultAddressId === id ? undefined : prev.defaultAddressId,
     }));
+
     showToast('Endereço removido', 'info');
   };
 
   const toggleFavorite = (productId: string) => {
     setUser((prev) => {
       const isFav = prev.favoriteProductIds.includes(productId);
+
       const nextFavs = isFav
         ? prev.favoriteProductIds.filter((id) => id !== productId)
         : [...prev.favoriteProductIds, productId];
-      return { ...prev, favoriteProductIds: nextFavs };
+
+      return {
+        ...prev,
+        favoriteProductIds: nextFavs,
+      };
     });
   };
 
@@ -444,7 +497,11 @@ const deliveryFee = 0;
       email,
       authProvider: provider,
     }));
-    showToast(`Conectado com sucesso via ${provider.toUpperCase()}!`, 'success');
+
+    showToast(
+      `Conectado com sucesso via ${provider.toUpperCase()}!`,
+      'success'
+    );
   };
 
   const logoutUser = () => {
@@ -453,7 +510,10 @@ const deliveryFee = 0;
   };
 
   const updateProduct = (updated: Product) => {
-    setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+    setProducts((prev) =>
+      prev.map((p) => (p.id === updated.id ? updated : p))
+    );
+
     showToast(`Produto "${updated.name}" atualizado!`, 'success');
   };
 
@@ -462,14 +522,22 @@ const deliveryFee = 0;
       ...productData,
       id: `prod_${Date.now()}`,
     };
+
     setProducts((prev) => [...prev, newProduct]);
-    showToast(`Novo produto cadastrado com sucesso!`, 'success');
+
+    showToast(
+      `Novo produto cadastrado com sucesso!`,
+      'success'
+    );
   };
 
   const toggleProductStock = (id: string) => {
     setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, inStock: !p.inStock } : p))
+      prev.map((p) =>
+        p.id === id ? { ...p, inStock: !p.inStock } : p
+      )
     );
+
     showToast('Disponibilidade do produto alterada', 'info');
   };
 
@@ -534,8 +602,10 @@ const deliveryFee = 0;
 
 export const useApp = () => {
   const context = useContext(AppContext);
+
   if (!context) {
     throw new Error('useApp must be used within an AppProvider');
   }
+
   return context;
 };
