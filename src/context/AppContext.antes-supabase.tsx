@@ -16,7 +16,6 @@ import {
   STORE_SETTINGS,
 } from '../data/initialData';
 import { generateOrderNumber } from '../utils/helpers';
-import { supabase } from '../lib/supabase';
 
 interface Toast {
   id: string;
@@ -64,12 +63,7 @@ interface AppContextType {
   deleteAddress: (id: string) => void;
   toggleFavorite: (productId: string) => void;
   isFavorite: (productId: string) => boolean;
-  loginUser: (
-    name: string,
-    phone: string,
-    email: string,
-    provider: 'whatsapp' | 'google' | 'email'
-  ) => void;
+  loginUser: (name: string, phone: string, email: string, provider: 'whatsapp' | 'google' | 'email') => void;
   logoutUser: () => void;
   isAdmin: boolean;
   setIsAdmin: (val: boolean) => void;
@@ -79,10 +73,7 @@ interface AppContextType {
   settings: StoreSettings;
   updateSettings: (newSettings: Partial<StoreSettings>) => void;
   toasts: Toast[];
-  showToast: (
-    message: string,
-    type?: 'success' | 'info' | 'warning' | 'error'
-  ) => void;
+  showToast: (message: string, type?: 'success' | 'info' | 'warning' | 'error') => void;
   isShareModalOpen: boolean;
   setIsShareModalOpen: (open: boolean) => void;
   activeOrderFilter: OrderStatus | 'todos';
@@ -114,34 +105,14 @@ const DEFAULT_USER: UserProfile = {
   favoriteProductIds: ['sopa-1', 'combo-semana'],
 };
 
-export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [adminSession, setAdminSession] = useState<any>(null);
+  const [activeOrderFilter, setActiveOrderFilter] = useState<OrderStatus | 'todos'>('todos');
 
-useEffect(() => {
-  supabase.auth.getSession().then(({ data }) => {
-    setAdminSession(data.session);
-  });
-
-  const {
-    data: { subscription },
-  } = supabase.auth.onAuthStateChange((_event, session) => {
-    setAdminSession(session);
-  });
-
-  return () => {
-    subscription.unsubscribe();
-  };
-}, []);
-  const [activeOrderFilter, setActiveOrderFilter] = useState<
-    OrderStatus | 'todos'
-  >('todos');
-
+  // LocalStorage backed states
   const [products, setProducts] = useState<Product[]>(() => {
     try {
       const saved = localStorage.getItem('natural_fruit_products');
@@ -181,11 +152,9 @@ useEffect(() => {
   const [orders, setOrders] = useState<Order[]>(() => {
     try {
       const saved = localStorage.getItem('natural_fruit_orders');
+      if (saved) return JSON.parse(saved);
 
-      if (saved) {
-        return JSON.parse(saved);
-      }
-
+      // Generate one initial sample order for demonstration
       return [
         {
           id: 'ord_init_1',
@@ -229,40 +198,6 @@ useEffect(() => {
       return [];
     }
   });
-    useEffect(() => {
-    const loadOrdersFromSupabase = async () => {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('ERRO AO CARREGAR PEDIDOS:', error);
-        return;
-      }
-
-      if (data) {
-        const loadedOrders: Order[] = data.map((order: any) => ({
-          id: order.id,
-          orderNumber: order.order_number,
-          customer: order.customer,
-          items: order.items,
-          subtotal: Number(order.subtotal),
-          discount: Number(order.discount),
-          deliveryFee: Number(order.delivery_fee),
-          total: Number(order.total),
-          status: order.status,
-          createdAt: order.created_at,
-          notes: order.notes,
-          couponCode: order.coupon_code,
-        }));
-
-        setOrders(loadedOrders);
-      }
-    };
-
-    loadOrdersFromSupabase();
-  }, []);
 
   const [user, setUser] = useState<UserProfile>(() => {
     try {
@@ -276,21 +211,12 @@ useEffect(() => {
   const [settings, setSettings] = useState<StoreSettings>(() => {
     try {
       const saved = localStorage.getItem('natural_fruit_settings');
-
       if (saved) {
         const parsed = JSON.parse(saved);
-
-        if (parsed.whatsapp1 === '31975561467') {
-          parsed.whatsapp1 = '31991899312';
-        }
-
-        if (parsed.pixKey === '31975561467') {
-          parsed.pixKey = '31991899312';
-        }
-
+        if (parsed.whatsapp1 === '31975561467') parsed.whatsapp1 = '31991899312';
+        if (parsed.pixKey === '31975561467') parsed.pixKey = '31991899312';
         return parsed;
       }
-
       return STORE_SETTINGS;
     } catch {
       return STORE_SETTINGS;
@@ -299,11 +225,9 @@ useEffect(() => {
 
   const [toasts, setToasts] = useState<Toast[]>([]);
 
+  // Sync to localStorage
   useEffect(() => {
-    localStorage.setItem(
-      'natural_fruit_products',
-      JSON.stringify(products)
-    );
+    localStorage.setItem('natural_fruit_products', JSON.stringify(products));
   }, [products]);
 
   useEffect(() => {
@@ -319,24 +243,15 @@ useEffect(() => {
   }, [user]);
 
   useEffect(() => {
-    localStorage.setItem(
-      'natural_fruit_coupon',
-      JSON.stringify(appliedCoupon)
-    );
+    localStorage.setItem('natural_fruit_coupon', JSON.stringify(appliedCoupon));
   }, [appliedCoupon]);
 
   useEffect(() => {
-    localStorage.setItem(
-      'natural_fruit_coupons',
-      JSON.stringify(coupons)
-    );
+    localStorage.setItem('natural_fruit_coupons', JSON.stringify(coupons));
   }, [coupons]);
 
   useEffect(() => {
-    localStorage.setItem(
-      'natural_fruit_settings',
-      JSON.stringify(settings)
-    );
+    localStorage.setItem('natural_fruit_settings', JSON.stringify(settings));
   }, [settings]);
 
   const showToast = (
@@ -344,24 +259,16 @@ useEffect(() => {
     type: 'success' | 'info' | 'warning' | 'error' = 'success'
   ) => {
     const id = Math.random().toString(36).substring(2, 9);
-
     setToasts((prev) => [...prev, { id, message, type }]);
-
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 3500);
   };
 
-  const addToCart = (
-    product: Product,
-    quantity = 1,
-    observation?: string
-  ) => {
+  const addToCart = (product: Product, quantity = 1, observation?: string) => {
     setCart((prev) => {
       const existingIdx = prev.findIndex(
-        (item) =>
-          item.product.id === product.id &&
-          item.observation === observation
+        (item) => item.product.id === product.id && item.observation === observation
       );
 
       if (existingIdx > -1) {
@@ -373,35 +280,22 @@ useEffect(() => {
       return [...prev, { product, quantity, observation }];
     });
 
-    showToast(
-      `Adicionado: ${product.name} (${quantity}x)`,
-      'success'
-    );
+    showToast(`Adicionado: ${product.name} (${quantity}x)`, 'success');
   };
 
   const removeFromCart = (productId: string) => {
-    setCart((prev) =>
-      prev.filter((item) => item.product.id !== productId)
-    );
-
+    setCart((prev) => prev.filter((item) => item.product.id !== productId));
     showToast('Item removido do carrinho', 'info');
   };
 
-  const updateQuantity = (
-    productId: string,
-    quantity: number
-  ) => {
+  const updateQuantity = (productId: string, quantity: number) => {
     if (quantity <= 0) {
       removeFromCart(productId);
       return;
     }
 
     setCart((prev) =>
-      prev.map((item) =>
-        item.product.id === productId
-          ? { ...item, quantity }
-          : item
-      )
+      prev.map((item) => (item.product.id === productId ? { ...item, quantity } : item))
     );
   };
 
@@ -410,14 +304,10 @@ useEffect(() => {
     setAppliedCoupon(null);
   };
 
-  const cartCount = cart.reduce(
-    (sum, item) => sum + item.quantity,
-    0
-  );
+  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const subtotal = cart.reduce(
-    (sum, item) =>
-      sum + item.product.price * item.quantity,
+    (sum, item) => sum + item.product.price * item.quantity,
     0
   );
 
@@ -427,28 +317,19 @@ useEffect(() => {
 
   if (appliedCoupon && subtotal > 0) {
     if (appliedCoupon.discountPercent) {
-      discount =
-        (subtotal * appliedCoupon.discountPercent) / 100;
+      discount = (subtotal * appliedCoupon.discountPercent) / 100;
     } else if (appliedCoupon.discountFixed) {
-      discount = Math.min(
-        appliedCoupon.discountFixed,
-        subtotal
-      );
+      discount = Math.min(appliedCoupon.discountFixed, subtotal);
     }
   }
 
-  const total = Math.max(
-    0,
-    subtotal - discount
-  );
+  const total = Math.max(0, subtotal - discount);
 
   const applyCoupon = (code: string) => {
     const trimmed = code.trim().toUpperCase();
 
     const found = coupons.find(
-      (c) =>
-        c.code.toUpperCase() === trimmed &&
-        c.active
+      (c) => c.code.toUpperCase() === trimmed && c.active
     );
 
     if (!found) {
@@ -458,24 +339,16 @@ useEffect(() => {
       };
     }
 
-    if (
-      found.minOrderValue &&
-      subtotal < found.minOrderValue
-    ) {
+    if (found.minOrderValue && subtotal < found.minOrderValue) {
       return {
         success: false,
-        message: `Valor mínimo para este cupom é de R$ ${found.minOrderValue.toFixed(
-          2
-        )}.`,
+        message: `Valor mínimo para este cupom é de R$ ${found.minOrderValue.toFixed(2)}.`,
       };
     }
 
     setAppliedCoupon(found);
 
-    showToast(
-      `Cupom ${found.code} aplicado com sucesso!`,
-      'success'
-    );
+    showToast(`Cupom ${found.code} aplicado com sucesso!`, 'success');
 
     return {
       success: true,
@@ -514,7 +387,7 @@ useEffect(() => {
       couponCode: appliedCoupon?.code,
     };
 
-    setOrders((prev) => [newOrder, ...prev]);
+        setOrders((prev) => [newOrder, ...prev]);
 
     void supabase
       .from('orders')
@@ -533,20 +406,9 @@ useEffect(() => {
       })
       .then(({ error }) => {
         if (error) {
-          console.error(
-            'ERRO SUPABASE:',
-            error
-          );
-
-          showToast(
-            'Erro ao salvar pedido no servidor.',
-            'error'
-          );
+          console.error('ERRO SUPABASE:', error);
         } else {
-          console.log(
-            'PEDIDO SALVO NO SUPABASE:',
-            newOrder.id
-          );
+          console.log('PEDIDO SALVO NO SUPABASE:', newOrder.id);
         }
       });
 
@@ -555,18 +417,34 @@ useEffect(() => {
     return newOrder;
   };
 
-  const updateOrderStatus = (
-    orderId: string,
-    status: OrderStatus
-  ) => {
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === orderId
-          ? { ...o, status }
-          : o
-      )
-    );
+      setOrders((prev) => [newOrder, ...prev]);
 
+    // Salvar pedido no Supabase
+    void supabase
+      .from('orders')
+      .insert({
+        id: newOrder.id,
+        order_number: newOrder.orderNumber,
+        customer: newOrder.customer,
+        items: newOrder.items,
+        subtotal: newOrder.subtotal,
+        discount: newOrder.discount,
+        delivery_fee: newOrder.deliveryFee,
+        total: newOrder.total,
+        status: newOrder.status,
+        notes: newOrder.notes ?? null,
+        coupon_code: newOrder.couponCode ?? null,
+      })
+      .then(({ error }) => {
+        if (error) {
+          console.error('Erro ao salvar pedido no Supabase:', error);
+          showToast('Erro ao salvar pedido no servidor.', 'error');
+        } else {
+          console.log('Pedido salvo no Supabase:', newOrder.id);
+        }
+      });
+
+    clearCart();
     showToast(
       `Status do pedido atualizado para: ${status.toUpperCase()}`,
       'info'
@@ -575,11 +453,7 @@ useEffect(() => {
 
   const repeatOrder = (order: Order) => {
     order.items.forEach((item) => {
-      addToCart(
-        item.product,
-        item.quantity,
-        item.observation
-      );
+      addToCart(item.product, item.quantity, item.observation);
     });
 
     setActiveTab('cart');
@@ -590,18 +464,9 @@ useEffect(() => {
     );
   };
 
-  const updateUserProfile = (
-    data: Partial<UserProfile>
-  ) => {
-    setUser((prev) => ({
-      ...prev,
-      ...data,
-    }));
-
-    showToast(
-      'Perfil atualizado com sucesso!',
-      'success'
-    );
+  const updateUserProfile = (data: Partial<UserProfile>) => {
+    setUser((prev) => ({ ...prev, ...data }));
+    showToast('Perfil atualizado com sucesso!', 'success');
   };
 
   const saveAddress = (
@@ -613,9 +478,7 @@ useEffect(() => {
 
       if (id) {
         nextAddresses = prev.addresses.map((a) =>
-          a.id === id
-            ? { ...addressData, id }
-            : a
+          a.id === id ? { ...addressData, id } : a
         );
       } else {
         const newAddr: DeliveryAddress = {
@@ -623,63 +486,39 @@ useEffect(() => {
           id: `addr_${Date.now()}`,
         };
 
-        nextAddresses = [
-          ...prev.addresses,
-          newAddr,
-        ];
+        nextAddresses = [...prev.addresses, newAddr];
       }
 
       return {
         ...prev,
         addresses: nextAddresses,
         defaultAddressId: addressData.isDefault
-          ? id ||
-            nextAddresses[
-              nextAddresses.length - 1
-            ].id
+          ? id || nextAddresses[nextAddresses.length - 1].id
           : prev.defaultAddressId,
       };
     });
 
-    showToast(
-      'Endereço salvo com sucesso!',
-      'success'
-    );
+    showToast('Endereço salvo com sucesso!', 'success');
   };
 
   const deleteAddress = (id: string) => {
     setUser((prev) => ({
       ...prev,
-      addresses: prev.addresses.filter(
-        (a) => a.id !== id
-      ),
+      addresses: prev.addresses.filter((a) => a.id !== id),
       defaultAddressId:
-        prev.defaultAddressId === id
-          ? undefined
-          : prev.defaultAddressId,
+        prev.defaultAddressId === id ? undefined : prev.defaultAddressId,
     }));
 
-    showToast(
-      'Endereço removido',
-      'info'
-    );
+    showToast('Endereço removido', 'info');
   };
 
   const toggleFavorite = (productId: string) => {
     setUser((prev) => {
-      const isFav =
-        prev.favoriteProductIds.includes(
-          productId
-        );
+      const isFav = prev.favoriteProductIds.includes(productId);
 
       const nextFavs = isFav
-        ? prev.favoriteProductIds.filter(
-            (id) => id !== productId
-          )
-        : [
-            ...prev.favoriteProductIds,
-            productId,
-          ];
+        ? prev.favoriteProductIds.filter((id) => id !== productId)
+        : [...prev.favoriteProductIds, productId];
 
       return {
         ...prev,
@@ -689,19 +528,14 @@ useEffect(() => {
   };
 
   const isFavorite = (productId: string) => {
-    return user.favoriteProductIds.includes(
-      productId
-    );
+    return user.favoriteProductIds.includes(productId);
   };
 
   const loginUser = (
     name: string,
     phone: string,
     email: string,
-    provider:
-      | 'whatsapp'
-      | 'google'
-      | 'email'
+    provider: 'whatsapp' | 'google' | 'email'
   ) => {
     setUser((prev) => ({
       ...prev,
@@ -719,80 +553,44 @@ useEffect(() => {
 
   const logoutUser = () => {
     setUser(DEFAULT_USER);
-    showToast(
-      'Você saiu da sua conta',
-      'info'
-    );
+    showToast('Você saiu da sua conta', 'info');
   };
 
-  const updateProduct = (
-    updated: Product
-  ) => {
+  const updateProduct = (updated: Product) => {
     setProducts((prev) =>
-      prev.map((p) =>
-        p.id === updated.id
-          ? updated
-          : p
-      )
+      prev.map((p) => (p.id === updated.id ? updated : p))
     );
 
-    showToast(
-      `Produto "${updated.name}" atualizado!`,
-      'success'
-    );
+    showToast(`Produto "${updated.name}" atualizado!`, 'success');
   };
 
-  const addProduct = (
-    productData: Omit<Product, 'id'>
-  ) => {
+  const addProduct = (productData: Omit<Product, 'id'>) => {
     const newProduct: Product = {
       ...productData,
       id: `prod_${Date.now()}`,
     };
 
-    setProducts((prev) => [
-      ...prev,
-      newProduct,
-    ]);
+    setProducts((prev) => [...prev, newProduct]);
 
     showToast(
-      'Novo produto cadastrado com sucesso!',
+      `Novo produto cadastrado com sucesso!`,
       'success'
     );
   };
 
-  const toggleProductStock = (
-    id: string
-  ) => {
+  const toggleProductStock = (id: string) => {
     setProducts((prev) =>
       prev.map((p) =>
-        p.id === id
-          ? {
-              ...p,
-              inStock: !p.inStock,
-            }
-          : p
+        p.id === id ? { ...p, inStock: !p.inStock } : p
       )
     );
 
-    showToast(
-      'Disponibilidade do produto alterada',
-      'info'
-    );
+    showToast('Disponibilidade do produto alterada', 'info');
   };
 
-  const updateSettings = (
-    newSettings: Partial<StoreSettings>
-  ) => {
-    setSettings((prev) => ({
-      ...prev,
-      ...newSettings,
-    }));
-
-    showToast(
-      'Configurações da loja atualizadas!',
-      'success'
-    );
+  const updateSettings = (newSettings: Partial<StoreSettings>) => {
+    setSettings((prev) => ({ ...prev, ...newSettings }));
+    showToast('Configurações da loja atualizadas!', 'success');
   };
 
   return (
@@ -853,9 +651,7 @@ export const useApp = () => {
   const context = useContext(AppContext);
 
   if (!context) {
-    throw new Error(
-      'useApp must be used within an AppProvider'
-    );
+    throw new Error('useApp must be used within an AppProvider');
   }
 
   return context;

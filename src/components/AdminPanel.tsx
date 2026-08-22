@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { supabase } from '../lib/supabase';
 import {
   Shield,
   TrendingUp,
@@ -34,16 +35,18 @@ export const AdminPanel: React.FC = () => {
     updateSettings,
     showToast,
     setIsShareModalOpen,
+    setIsAdmin,
   } = useApp();
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [pinCode, setPinCode] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
   const [adminTab, setAdminTab] = useState<'pedidos' | 'produtos' | 'promocoes' | 'loja'>('pedidos');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'todos'>('todos');
 
   // Edit product modal state
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [isCreatingProduct, setIsCreatingProduct] = useState(false);
+  const [isCreatingProduct, setIsCreatingProduct] = useState(false); 
 
   // New product form
   const [newProdName, setNewProdName] = useState('');
@@ -74,23 +77,78 @@ export const AdminPanel: React.FC = () => {
     return ord.status === statusFilter;
   });
 
-  const handlePinSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (pinCode === '1234' || pinCode === 'naturalfruit' || pinCode === 'admin2026') {
-      setIsAuthenticated(true);
-      showToast('Acesso administrativo liberado!', 'success');
-      setPinCode('');
-    } else {
-      showToast('Senha de administrador incorreta.', 'error');
-    }
-  };
+  const handlePinSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-  const handleSaveProductEdit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingProduct) return;
-    updateProduct(editingProduct);
-    setEditingProduct(null);
-  };
+  const email = adminEmail.trim();
+  const password = adminPassword;
+
+  if (!email || !password) {
+    showToast(
+      'Digite o e-mail e a senha do administrador.',
+      'error'
+    );
+    return;
+  }
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) {
+    console.error('ERRO LOGIN ADMIN:', error);
+
+    showToast(
+      'E-mail ou senha do administrador incorretos.',
+      'error'
+    );
+
+    return;
+  }
+
+  setIsAuthenticated(true);
+  setIsAdmin(true);
+
+  showToast(
+    'Acesso administrativo liberado!',
+    'success'
+  );
+
+  setAdminEmail('');
+  setAdminPassword('');
+};
+const handleForgotPassword = async () => {
+  const email = adminEmail.trim();
+
+  if (!email) {
+    showToast(
+      'Digite o e-mail do administrador primeiro.',
+      'error'
+    );
+    return;
+  }
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin,
+  });
+
+  if (error) {
+    console.error('ERRO RECUPERAÇÃO SENHA ADMIN:', error);
+
+    showToast(
+      'Não foi possível enviar o e-mail de recuperação.',
+      'error'
+    );
+
+    return;
+  }
+
+  showToast(
+    'E-mail de recuperação enviado. Verifique sua caixa de entrada.',
+    'success'
+  );
+};
 
   const handleCreateProductSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,22 +228,39 @@ export const AdminPanel: React.FC = () => {
           </p>
         </div>
 
-        <form onSubmit={handlePinSubmit} className="space-y-3">
-          <input
-            type="password"
-            placeholder="Digite a senha de administrador"
-            value={pinCode}
-            onChange={(e) => setPinCode(e.target.value)}
-            className="w-full bg-[#F7F9F6] border border-[#E2E8DF] rounded-2xl p-3 text-center text-sm font-mono tracking-widest focus:outline-[#7FB069]"
-          />
-          <button
-            type="submit"
-            className="w-full py-3.5 bg-[#2D4628] hover:bg-[#20321d] text-white rounded-2xl font-bold text-xs uppercase tracking-wider shadow-md transition-colors cursor-pointer"
-          >
-            Entrar no Painel
-          </button>
-        </form>
-      </div>
+<form onSubmit={handlePinSubmit} className="space-y-3">
+  <input
+    type="email"
+    placeholder="E-mail do administrador"
+    value={adminEmail}
+    onChange={(e) => setAdminEmail(e.target.value)}
+    className="w-full bg-[#F7F9F6] border border-[#E2E8DF] rounded-2xl p-3 text-center text-sm focus:outline-[#7FB069]"
+  />
+
+  <input
+    type="password"
+    placeholder="Senha do administrador"
+    value={adminPassword}
+    onChange={(e) => setAdminPassword(e.target.value)}
+    className="w-full bg-[#F7F9F6] border border-[#E2E8DF] rounded-2xl p-3 text-center text-sm focus:outline-[#7FB069]"
+  />
+
+  <button
+    type="submit"
+    className="w-full py-3.5 bg-[#2D4628] hover:bg-[#20321d] text-white rounded-2xl font-bold text-xs uppercase tracking-wider shadow-md transition-colors cursor-pointer"
+  >
+    Entrar no Painel
+  </button>
+
+  <button
+    type="button"
+    onClick={handleForgotPassword}
+    className="w-full text-xs text-[#2D4628] hover:underline font-semibold cursor-pointer"
+  >
+    Esqueci minha senha
+  </button>
+</form>
+        </div>
     );
   }
 
@@ -347,27 +422,29 @@ export const AdminPanel: React.FC = () => {
       </div>
 
       {/* TAB 1: GESTÃO DE PEDIDOS */}
-      {adminTab === 'pedidos' && (
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-1.5 bg-white p-1 rounded-2xl border border-[#E2E8DF] text-xs font-bold">
-              {(['todos', 'recebido', 'preparando', 'saiu_para_entrega', 'entregue', 'cancelado'] as const).map((st) => (
-                <button
-                  key={st}
-                  onClick={() => setStatusFilter(st)}
-                  className={`px-3 py-1.5 rounded-xl capitalize transition-all cursor-pointer ${
-                    statusFilter === st ? 'bg-[#2D4628] text-white shadow-2xs' : 'text-[#2D4628]/60 hover:text-[#2D4628]'
-                  }`}
-                >
-                  {st.replace(/_/g, ' ')}
-                </button>
-              ))}
-            </div>
+{adminTab === 'pedidos' && (
+  <div className="space-y-4">
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex items-center gap-1.5 bg-white p-1 rounded-2xl border border-[#E2E8DF] text-xs font-bold">
+        {(['todos', 'recebido', 'preparando', 'saiu_para_entrega', 'entregue', 'cancelado'] as OrderStatus[]).map((st) => (
+          <button
+            key={st}
+            onClick={() => setStatusFilter(st)}
+            className={`px-3 py-1.5 rounded-xl capitalize transition-all cursor-pointer ${
+              statusFilter === st
+                ? 'bg-[#2D4628] text-white shadow-2xs'
+                : 'text-[#2D4628]/60 hover:text-[#2D4628]'
+            }`}
+          >
+            {st.replace(/_/g, ' ')}
+          </button>
+        ))}
+      </div>
 
-            <span className="text-xs font-bold text-[#2D4628]/50">
-              Exibindo {filteredOrders.length} pedido(s)
-            </span>
-          </div>
+      <span className="text-xs font-bold text-[#2D4628]/50">
+        Exibindo {filteredOrders.length} pedido(s)
+      </span>
+    </div>
 
           {filteredOrders.length === 0 ? (
             <div className="bg-white rounded-[2.5rem] p-10 text-center border border-[#E2E8DF] shadow-xs">
@@ -893,7 +970,7 @@ export const AdminPanel: React.FC = () => {
                 />
               </div>
             </div>
-          </div>
+          </div>Posso
         </div>
       )}
     </div>
