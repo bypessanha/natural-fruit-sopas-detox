@@ -44,7 +44,7 @@ export const AdminPanel: React.FC = () => {
 const [newPassword, setNewPassword] = useState('');
 const [confirmPassword, setConfirmPassword] = useState('');
 useEffect(() => {
-  dconst checkRecoverySession = async () => {
+  const checkRecoverySession = async () => {
   const {
     data: { session },
   } = await supabase.auth.getSession();
