@@ -150,6 +150,48 @@ useEffect(() => {
       return INITIAL_PRODUCTS;
     }
   });
+// colocar nova função aqui
+const loadProductsFromSupabase = async () => {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .order('id');
+
+  if (error) {
+    console.error('ERRO AO CARREGAR PRODUTOS DO SUPABASE:', error);
+    return;
+  }
+
+  if (data) {
+    const mappedProducts: Product[] = data.map((p) => ({
+      id: p.id,
+      name: p.name,
+      subtitle: p.subtitle,
+      category: p.category,
+      price: Number(p.price),
+      originalPrice:
+        p.original_price != null
+          ? Number(p.original_price)
+          : undefined,
+      volume: p.volume,
+      ingredients: p.ingredients,
+      benefits: p.benefits,
+      description: p.description,
+      prepTime: p.prep_time,
+      calories: Number(p.calories),
+      image: p.image,
+      badge: p.badge ?? undefined,
+      isHighlighted: p.is_highlighted,
+      inStock: p.in_stock,
+      rating: Number(p.rating),
+      reviewCount: Number(p.review_count),
+      dietaryTags: p.dietary_tags,
+      accentColor: p.accent_color,
+    }));
+
+    setProducts(mappedProducts);
+  }
+};
 
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
@@ -298,13 +340,10 @@ useEffect(() => {
   });
 
   const [toasts, setToasts] = useState<Toast[]>([]);
-
   useEffect(() => {
-    localStorage.setItem(
-      'natural_fruit_products',
-      JSON.stringify(products)
-    );
-  }, [products]);
+    loadProductsFromSupabase();
+}, []);
+  
 
   useEffect(() => {
     localStorage.setItem('natural_fruit_cart', JSON.stringify(cart));
@@ -555,23 +594,41 @@ useEffect(() => {
     return newOrder;
   };
 
-  const updateOrderStatus = (
-    orderId: string,
-    status: OrderStatus
-  ) => {
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === orderId
-          ? { ...o, status }
-          : o
-      )
-    );
+const updateOrderStatus = (
+  orderId: string,
+  status: OrderStatus
+) => {
+  setOrders((prev) =>
+    prev.map((o) =>
+      o.id === orderId
+        ? { ...o, status }
+        : o
+    )
+  );
 
-    showToast(
-      `Status do pedido atualizado para: ${status.toUpperCase()}`,
-      'info'
-    );
-  };
+  void supabase
+    .from('orders')
+    .update({ status })
+    .eq('id', orderId)
+    .then(({ error }) => {
+      if (error) {
+        console.error(
+          'ERRO AO ATUALIZAR STATUS NO SUPABASE:',
+          error
+        );
+
+        showToast(
+          'Erro ao atualizar pedido no servidor.',
+          'error'
+        );
+      }
+    });
+
+  showToast(
+    `Status do pedido atualizado para: ${status.toUpperCase()}`,
+    'info'
+  );
+};
 
   const repeatOrder = (order: Order) => {
     order.items.forEach((item) => {
@@ -755,46 +812,35 @@ useEffect(() => {
       newProduct,
     ]);
 
-    showToast(
-      'Novo produto cadastrado com sucesso!',
-      'success'
-    );
-  };
+      showToast(
+    'Novo produto cadastrado com sucesso!',
+    'success'
+  );
+};
+const updateSettings = (
+  newSettings: Partial<StoreSettings>
+) => {
+  setSettings((prev) => ({
+    ...prev,
+    ...newSettings,
+  }));
 
-  const toggleProductStock = (
-    id: string
-  ) => {
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? {
-              ...p,
-              inStock: !p.inStock,
-            }
-          : p
-      )
-    );
+  showToast(
+    'Configurações atualizadas com sucesso!',
+    'success'
+  );
+};
 
-    showToast(
-      'Disponibilidade do produto alterada',
-      'info'
-    );
-  };
 
-  const updateSettings = (
-    newSettings: Partial<StoreSettings>
-  ) => {
-    setSettings((prev) => ({
-      ...prev,
-      ...newSettings,
-    }));
-
-    showToast(
-      'Configurações da loja atualizadas!',
-      'success'
-    );
-  };
-
+const toggleProductStock = (productId: string) => {
+  setProducts((prev) =>
+    prev.map((product) =>
+      product.id === productId
+        ? { ...product, inStock: !product.inStock }
+        : product
+    )
+  );
+};
   return (
     <AppContext.Provider
       value={{

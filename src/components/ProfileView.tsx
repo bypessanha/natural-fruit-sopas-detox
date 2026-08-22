@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { supabase } from '../lib/supabase';
 import {
   User,
   MapPin,
@@ -50,6 +51,7 @@ export const ProfileView: React.FC = () => {
   const [loginPhone, setLoginPhone] = useState('');
   const [loginName, setLoginName] = useState('');
   const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
 
   const favoriteProducts = products.filter((p) => user.favoriteProductIds.includes(p.id));
 
@@ -89,26 +91,74 @@ export const ProfileView: React.FC = () => {
     setNewAddrReference('');
   };
 
-  const handleQuickLogin = (provider: 'whatsapp' | 'google' | 'email') => {
-    if (provider === 'google') {
-      loginUser('Cliente Google', '(31) 99999-8888', 'cliente.google@gmail.com', 'google');
-      setIsLoginModalOpen(false);
-    } else if (provider === 'whatsapp') {
-      if (!loginPhone.trim() || !loginName.trim()) {
-        showToast('Informe seu nome e WhatsApp para entrar.', 'error');
-        return;
-      }
-      loginUser(loginName.trim(), loginPhone.trim(), loginEmail.trim() || 'cliente@whatsapp.com', 'whatsapp');
-      setIsLoginModalOpen(false);
-    } else {
-      if (!loginEmail.trim() || !loginName.trim()) {
-        showToast('Informe seu nome e e-mail para entrar.', 'error');
-        return;
-      }
-      loginUser(loginName.trim(), loginPhone.trim() || '(31) 98888-7777', loginEmail.trim(), 'email');
-      setIsLoginModalOpen(false);
+ const handleQuickLogin = async (
+  provider: 'whatsapp' | 'google' | 'email'
+) => {
+  if (provider === 'google') {
+    loginUser(
+      'Cliente Google',
+      '(31) 99999-8888',
+      'cliente.google@gmail.com',
+      'google'
+    );
+    setIsLoginModalOpen(false);
+  } else if (provider === 'whatsapp') {
+    if (!loginPhone.trim() || !loginName.trim()) {
+      showToast(
+        'Informe seu nome e WhatsApp para entrar.',
+        'error'
+      );
+      return;
     }
-  };
+
+    loginUser(
+      loginName.trim(),
+      loginPhone.trim(),
+      loginEmail.trim() || 'cliente@whatsapp.com',
+      'whatsapp'
+    );
+
+    setIsLoginModalOpen(false);
+  } else {
+    if (!loginEmail.trim() || !loginPassword.trim()) {
+      showToast(
+        'Informe seu e-mail e senha para entrar.',
+        'error'
+      );
+      return;
+    }
+
+    const { data, error } =
+      await supabase.auth.signInWithPassword({
+        email: loginEmail.trim(),
+        password: loginPassword,
+      });
+
+    if (error) {
+      console.error('ERRO LOGIN SUPABASE:', error);
+      showToast(
+        'E-mail ou senha inválido.',
+        'error'
+      );
+      return;
+    }
+
+    loginUser(
+      loginName.trim() || 'Cliente',
+      loginPhone.trim() || '',
+      data.user.email || loginEmail.trim(),
+      'email'
+    );
+
+    setLoginPassword('');
+    setIsLoginModalOpen(false);
+
+    showToast(
+      'Login realizado com sucesso!',
+      'success'
+    );
+  }
+};
 
   return (
     <div className="space-y-6 pb-20 max-w-4xl mx-auto animate-in fade-in duration-300">

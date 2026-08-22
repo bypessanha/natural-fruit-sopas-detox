@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import {
@@ -27,7 +27,6 @@ export const AdminPanel: React.FC = () => {
     orders,
     updateOrderStatus,
     products,
-    updateProduct,
     addProduct,
     toggleProductStock,
     coupons,
@@ -41,6 +40,35 @@ export const AdminPanel: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
+const [newPassword, setNewPassword] = useState('');
+const [confirmPassword, setConfirmPassword] = useState('');
+useEffect(() => {
+  const checkRecoverySession = async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (session) {
+  setIsRecoveryMode(true);
+}
+  };
+
+  checkRecoverySession();
+
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      setIsRecoveryMode(true);
+    }
+  });
+
+  return () => {
+    subscription.unsubscribe();
+  };
+}, []);
+
   const [adminTab, setAdminTab] = useState<'pedidos' | 'produtos' | 'promocoes' | 'loja'>('pedidos');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'todos'>('todos');
 
@@ -91,10 +119,9 @@ export const AdminPanel: React.FC = () => {
     return;
   }
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+ const { error } = await supabase.auth.resetPasswordForEmail(email, {
+  redirectTo: `${window.location.origin}/?reset=true`,
+});
 
   if (error) {
     console.error('ERRO LOGIN ADMIN:', error);
@@ -150,6 +177,57 @@ const handleForgotPassword = async () => {
   );
 };
 
+const handleUpdatePassword = async () => {
+  if (!newPassword || !confirmPassword) {
+    showToast('Digite e confirme a nova senha.', 'error');
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    showToast(
+      'A nova senha deve ter pelo menos 6 caracteres.',
+      'error'
+    );
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    showToast('As senhas não são iguais.', 'error');
+    return;
+  }
+
+  const { error } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+
+  if (error) {
+    console.error('ERRO AO ALTERAR SENHA:', error);
+
+    showToast(
+      'Não foi possível alterar a senha.',
+      'error'
+    );
+
+    return;
+  }
+
+  showToast(
+    'Senha alterada com sucesso!',
+    'success'
+  );
+
+  setNewPassword('');
+  setConfirmPassword('');
+  setIsRecoveryMode(false);
+  setIsAuthenticated(true);
+  setIsAdmin(true);
+
+  window.history.replaceState(
+    {},
+    document.title,
+    window.location.pathname
+  );
+};
   const handleCreateProductSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProdName.trim()) {
@@ -214,7 +292,56 @@ const handleForgotPassword = async () => {
       window.open(waUrl, '_blank');
     }
   };
+if (isRecoveryMode) {
+  return (
+    <div className="max-w-md mx-auto my-12 p-8 bg-white rounded-[2.5rem] border border-[#E2E8DF] shadow-xl text-center space-y-5">
+      <div className="w-16 h-16 rounded-2xl bg-[#DCE6D5] text-[#2D4628] flex items-center justify-center mx-auto">
+        <Lock className="w-8 h-8" />
+      </div>
 
+      <div>
+        <h2 className="text-2xl font-serif italic text-[#2D4628]">
+          Criar nova senha
+        </h2>
+
+        <p className="text-xs text-[#2D4628]/60 mt-1">
+          Digite uma nova senha para acessar o Painel Administrativo.
+        </p>
+      </div>
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleUpdatePassword();
+        }}
+        className="space-y-3"
+      >
+        <input
+          type="password"
+          placeholder="Nova senha"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          className="w-full bg-[#F7F9F6] border border-[#E2E8DF] rounded-2xl p-3 text-center text-sm focus:outline-[#7FB069]"
+        />
+
+        <input
+          type="password"
+          placeholder="Confirme a nova senha"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          className="w-full bg-[#F7F9F6] border border-[#E2E8DF] rounded-2xl p-3 text-center text-sm focus:outline-[#7FB069]"
+        />
+
+        <button
+          type="submit"
+          className="w-full py-3.5 bg-[#2D4628] hover:bg-[#20321d] text-white rounded-2xl font-bold text-xs uppercase tracking-wider shadow-md transition-colors cursor-pointer"
+        >
+          Salvar nova senha
+        </button>
+      </form>
+    </div>
+  );
+}
   if (!isAuthenticated) {
     return (
       <div className="max-w-md mx-auto my-12 p-8 bg-white rounded-[2.5rem] border border-[#E2E8DF] shadow-xl text-center space-y-5 animate-in fade-in duration-300">
@@ -774,7 +901,17 @@ const handleForgotPassword = async () => {
           {editingProduct && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
               <form
-                onSubmit={handleSaveProductEdit}
+                onSubmit={(e) => {
+  e.preventDefault();
+
+  if (!editingProduct) return;
+
+  updateProduct(editingProduct.id, editingProduct);
+
+  showToast('Produto atualizado com sucesso!', 'success');
+
+  setEditingProduct(null);
+}}
                 className="bg-white w-full max-w-md rounded-[2.5rem] p-6 sm:p-8 shadow-2xl space-y-4 border border-[#E2E8DF]"
               >
                 <div className="flex items-center justify-between pb-2 border-b border-[#E2E8DF]">
