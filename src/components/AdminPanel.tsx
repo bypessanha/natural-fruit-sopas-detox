@@ -905,11 +905,11 @@ if (isRecoveryMode) {
                 onSubmit={(e) => {
   e.preventDefault();
 
-  if (!editingProduct) return;
+ if (!editingProduct) return;
 
-  updateProduct(editingProduct.id, editingProduct);
+updateProduct(editingProduct);
 
-  showToast('Produto atualizado com sucesso!', 'success');
+showToast('Produto atualizado com sucesso!', 'success');
 
   setEditingProduct(null);
 }}
