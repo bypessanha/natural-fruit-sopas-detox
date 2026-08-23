@@ -799,15 +799,7 @@ const updateProduct = async (updated: Product) => {
 };
 
 const addProduct = (
-
-    showToast(
-      `Produto "${updated.name}" atualizado!`,
-      'success'
-    );
-  };
-
-  const addProduct = (
-    productData: Omit<Product, 'id'>
+      productData: Omit<Product, 'id'>
   ) => {
     const newProduct: Product = {
       ...productData,
