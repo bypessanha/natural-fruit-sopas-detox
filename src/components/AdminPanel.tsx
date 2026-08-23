@@ -28,6 +28,7 @@ export const AdminPanel: React.FC = () => {
     updateOrderStatus,
     products,
     addProduct,
+    updateProduct,
     toggleProductStock,
     coupons,
     settings,
