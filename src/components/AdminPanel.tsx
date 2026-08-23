@@ -125,15 +125,22 @@ useEffect(() => {
 });
 
   if (error) {
-    console.error('ERRO LOGIN ADMIN:', error);
+  console.error('ERRO AO ALTERAR SENHA:', error);
 
+  if (error.message.includes('New password should be different')) {
     showToast(
-      'E-mail ou senha do administrador incorretos.',
+      'A nova senha deve ser diferente da senha anterior. Escolha outra senha.',
       'error'
     );
-
-    return;
+  } else {
+    showToast(
+      'Não foi possível alterar a senha. Tente novamente.',
+      'error'
+    );
   }
+
+  return;
+}
 
   setIsAuthenticated(true);
   setIsAdmin(true);
@@ -306,7 +313,7 @@ if (isRecoveryMode) {
         </h2>
 
         <p className="text-xs text-[#2D4628]/60 mt-1">
-          Digite uma nova senha para acessar o Painel Administrativo.
+         Digite uma nova senha. Ela deve ser diferente da sua senha anterior.
         </p>
       </div>
 
