@@ -792,11 +792,13 @@ const updateProduct = async (updated: Product) => {
     )
   );
 
-  showToast(
+   showToast(
     'Produto atualizado com sucesso!',
     'success'
   );
 };
+
+const addProduct = (
 
     showToast(
       `Produto "${updated.name}" atualizado!`,
