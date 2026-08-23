@@ -594,41 +594,7 @@ const loadProductsFromSupabase = async () => {
     return newOrder;
   };
 
-const updateOrderStatus = (
-  orderId: string,
-  status: OrderStatus
-) => {
-  setOrders((prev) =>
-    prev.map((o) =>
-      o.id === orderId
-        ? { ...o, status }
-        : o
-    )
-  );
 
-  void supabase
-    .from('orders')
-    .update({ status })
-    .eq('id', orderId)
-    .then(({ error }) => {
-      if (error) {
-        console.error(
-          'ERRO AO ATUALIZAR STATUS NO SUPABASE:',
-          error
-        );
-
-        showToast(
-          'Erro ao atualizar pedido no servidor.',
-          'error'
-        );
-      }
-    });
-
-  showToast(
-    `Status do pedido atualizado para: ${status.toUpperCase()}`,
-    'info'
-  );
-};
 
   const repeatOrder = (order: Order) => {
     order.items.forEach((item) => {
@@ -781,17 +747,56 @@ const updateOrderStatus = (
       'info'
     );
   };
+const updateProduct = async (updated: Product) => {
+  const { error } = await supabase
+    .from('products')
+    .update({
+      name: updated.name,
+      subtitle: updated.subtitle,
+      category: updated.category,
+      price: updated.price,
+      original_price: updated.originalPrice ?? null,
+      volume: updated.volume,
+      ingredients: updated.ingredients,
+      benefits: updated.benefits,
+      description: updated.description,
+      prep_time: updated.prepTime,
+      calories: updated.calories,
+      image: updated.image,
+      badge: updated.badge ?? null,
+      is_highlighted: updated.isHighlighted ?? false,
+      in_stock: updated.inStock,
+      rating: updated.rating,
+      review_count: updated.reviewCount,
+      dietary_tags: updated.dietaryTags,
+      accent_color: updated.accentColor,
+    })
+    .eq('id', updated.id);
 
-  const updateProduct = (
-    updated: Product
-  ) => {
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === updated.id
-          ? updated
-          : p
-      )
+  if (error) {
+    console.error('ERRO AO ATUALIZAR PRODUTO:', error);
+
+    showToast(
+      'Não foi possível atualizar o produto.',
+      'error'
     );
+
+    return;
+  }
+
+  setProducts((prev) =>
+    prev.map((p) =>
+      p.id === updated.id
+        ? updated
+        : p
+    )
+  );
+
+  showToast(
+    'Produto atualizado com sucesso!',
+    'success'
+  );
+};
 
     showToast(
       `Produto "${updated.name}" atualizado!`,
