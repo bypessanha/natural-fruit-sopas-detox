@@ -594,7 +594,41 @@ const loadProductsFromSupabase = async () => {
     return newOrder;
   };
 
+const updateOrderStatus = (
+  orderId: string,
+  status: OrderStatus
+) => {
+  setOrders((prev) =>
+    prev.map((o) =>
+      o.id === orderId
+        ? { ...o, status }
+        : o
+    )
+  );
 
+  void supabase
+    .from('orders')
+    .update({ status })
+    .eq('id', orderId)
+    .then(({ error }) => {
+      if (error) {
+        console.error(
+          'ERRO AO ATUALIZAR STATUS NO SUPABASE:',
+          error
+        );
+
+        showToast(
+          'Erro ao atualizar pedido no servidor.',
+          'error'
+        );
+      }
+    });
+
+  showToast(
+    `Status do pedido atualizado para: ${status.toUpperCase()}`,
+    'info'
+  );
+};
 
   const repeatOrder = (order: Order) => {
     order.items.forEach((item) => {
@@ -799,7 +833,8 @@ const updateProduct = async (updated: Product) => {
 };
 
 const addProduct = (
-      productData: Omit<Product, 'id'>
+  
+    productData: Omit<Product, 'id'>
   ) => {
     const newProduct: Product = {
       ...productData,
