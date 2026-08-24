@@ -624,7 +624,7 @@ if (isRecoveryMode) {
                       <span className="text-[10px] font-black text-[#2D4628]/40 uppercase tracking-wider block">
                         Itens do Pedido:
                       </span>
-                      {ord.items.map((item, idx) => (
+                      {(ord.items ?? []).map((item, idx) => (
                         <div key={idx} className="flex justify-between text-[#2D4628]">
                           <span>
                             {item.quantity}x {item.product.name}
