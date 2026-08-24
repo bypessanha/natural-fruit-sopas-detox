@@ -271,49 +271,71 @@ const loadProductsFromSupabase = async () => {
       return [];
     }
   });
-    useEffect(() => {
-    const loadOrdersFromSupabase = async () => {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
+  useEffect(() => {
+  const loadOrdersFromSupabase = async () => {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('ERRO AO CARREGAR PEDIDOS:', error);
-        return;
-      }
-
-      if (data) {
-        const loadedOrders: Order[] = data.map((order: any) => ({
-          id: order.id,
-          orderNumber: order.order_number,
-          customer: order.customer,
-          items: order.items,
-          subtotal: Number(order.subtotal),
-          discount: Number(order.discount),
-          deliveryFee: Number(order.delivery_fee),
-          total: Number(order.total),
-          status: order.status,
-          createdAt: order.created_at,
-          notes: order.notes,
-          couponCode: order.coupon_code,
-        }));
-
-        setOrders(loadedOrders);
-      }
-    };
-
-    loadOrdersFromSupabase();
-  }, []);
-
-  const [user, setUser] = useState<UserProfile>(() => {
-    try {
-      const saved = localStorage.getItem('natural_fruit_user');
-      return saved ? JSON.parse(saved) : DEFAULT_USER;
-    } catch {
-      return DEFAULT_USER;
+    if (error) {
+      console.error('ERRO AO CARREGAR PEDIDOS:', error);
+      return;
     }
-  });
+    console.log('PEDIDOS RECEBIDOS DO SUPABASE:', data);
+    if (data) {
+      const loadedOrders: Order[] = data.map((order: any) => ({
+        id: order.id,
+        user_id: order.user_id,
+        orderNumber: order.order_number,
+        customer: order.customer,
+        items: order.items,
+        subtotal: Number(order.subtotal),
+        discount: Number(order.discount),
+        deliveryFee: Number(order.delivery_fee),
+        total: Number(order.total),
+        status: order.status,
+        createdAt: order.created_at,
+        notes: order.notes,
+        couponCode: order.coupon_code,
+      }));
+
+      setOrders(loadedOrders);
+    }
+  };
+
+  loadOrdersFromSupabase();
+
+  const ordersChannel = supabase
+    .channel('orders-status-updates')
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+      },
+      (payload) => {
+        const updatedOrder = payload.new as any;
+
+        setOrders((prev) =>
+          prev.map((order) =>
+            order.id === updatedOrder.id
+              ? {
+                  ...order,
+                  status: updatedOrder.status,
+                }
+              : order
+          )
+        );
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(ordersChannel);
+  };
+}, []);
 
   const [settings, setSettings] = useState<StoreSettings>(() => {
     try {
@@ -527,7 +549,7 @@ const loadProductsFromSupabase = async () => {
     showToast('Cupom removido.', 'info');
   };
 
-  const createOrder = (
+  const createOrder = async (
     customerData: {
       name: string;
       phone: string;
@@ -537,9 +559,13 @@ const loadProductsFromSupabase = async () => {
       changeFor?: number;
     },
     notes?: string
-  ): Order => {
+  ): Promise<Order> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    console.log('USUÁRIO AUTENTICADO AO CRIAR PEDIDO:', user);
+    console.log('USER ID:', user?.id);
     const newOrder: Order = {
       id: `ord_${Date.now()}`,
+      user_id: user?.id,
       orderNumber: generateOrderNumber(),
       customer: customerData,
       items: [...cart],
@@ -559,6 +585,7 @@ const loadProductsFromSupabase = async () => {
       .from('orders')
       .insert({
         id: newOrder.id,
+        user_id: newOrder.user_id,
         order_number: newOrder.orderNumber,
         customer: newOrder.customer,
         items: newOrder.items,

@@ -693,12 +693,27 @@ if (isRecoveryMode) {
                       </button>
 
                       <button
-                        onClick={() => {
-                          const reason = prompt('Motivo do cancelamento (opcional):', 'Item fora de estoque ou solicitação do cliente');
-                          if (reason !== null) {
-                            handleSendStatusUpdateToClient(ord, 'cancelado', reason);
-                          }
-                        }}
+                      onClick={() => {
+  const reason = prompt(
+    'Motivo do cancelamento (opcional):',
+    'Item fora de estoque ou solicitação do cliente'
+  );
+
+  if (reason !== null) {
+    updateOrderStatus(ord.id, 'cancelado');
+
+    const cleanCustomerPhone = ord.customer.phone.replace(/\D/g, '');
+    const fullCustomerPhone = cleanCustomerPhone.startsWith('55')
+      ? cleanCustomerPhone
+      : `55${cleanCustomerPhone}`;
+
+    const statusMsg = `Olá ${ord.customer.name}! Informamos que seu pedido #${ord.orderNumber} da *Natural Fruit* foi cancelado.${reason ? ` Motivo: ${reason}.` : ''} Caso tenha alguma dúvida ou queira reagendar, estamos à disposição!`;
+
+    const waUrl = `https://api.whatsapp.com/send?phone=${fullCustomerPhone}&text=${encodeURIComponent(statusMsg)}`;
+
+    window.open(waUrl, '_blank');
+  }
+}}
                         className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                           ord.status === 'cancelado'
                             ? 'bg-rose-600 text-white shadow-2xs'
