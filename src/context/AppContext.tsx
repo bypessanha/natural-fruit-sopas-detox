@@ -192,7 +192,14 @@ const loadProductsFromSupabase = async () => {
     setProducts(mappedProducts);
   }
 };
-
+const [user, setUser] = useState<UserProfile>(() => {
+  try {
+    const saved = localStorage.getItem('natural_fruit_user');
+    return saved ? JSON.parse(saved) : DEFAULT_USER;
+  } catch {
+    return DEFAULT_USER;
+  }
+});
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem('natural_fruit_cart');
