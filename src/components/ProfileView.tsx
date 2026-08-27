@@ -53,7 +53,9 @@ export const ProfileView: React.FC = () => {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
-  const favoriteProducts = products.filter((p) => user.favoriteProductIds.includes(p.id));
+  const favoriteProducts = products.filter(
+  (p) => (user.favoriteProductIds ?? []).includes(p.id)
+);
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,12 +97,18 @@ export const ProfileView: React.FC = () => {
   provider: 'whatsapp' | 'google' | 'email'
 ) => {
   if (provider === 'google') {
-    loginUser(
-      'Cliente Google',
-      '(31) 99999-8888',
-      'cliente.google@gmail.com',
-      'google'
-    );
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin,
+      },
+    });
+
+    if (error) {
+      console.error('ERRO LOGIN GOOGLE SUPABASE:', error);
+      showToast('Não foi possível entrar com Google.', 'error');
+    }
+   
     setIsLoginModalOpen(false);
   } else if (provider === 'whatsapp') {
     if (!loginPhone.trim() || !loginName.trim()) {
@@ -110,6 +118,11 @@ export const ProfileView: React.FC = () => {
       );
       return;
     }
+
+        console.log('LOGIN WHATSAPP - PERFIL LOCAL');
+    console.log('NOME:', loginName.trim());
+    console.log('WHATSAPP:', loginPhone.trim());
+    console.log('EMAIL:', loginEmail.trim() || 'cliente@whatsapp.com');
 
     loginUser(
       loginName.trim(),
@@ -533,7 +546,7 @@ export const ProfileView: React.FC = () => {
         </button>
       </div>
 
-      {/* Login Modal */}
+            {/* Login Modal */}
       {isLoginModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] p-6 sm:p-8 shadow-2xl space-y-4 border border-[#E2E8DF]">
@@ -541,7 +554,11 @@ export const ProfileView: React.FC = () => {
               <div className="w-12 h-12 rounded-2xl bg-[#DCE6D5] text-[#2D4628] flex items-center justify-center mx-auto text-xl font-bold">
                 🌿
               </div>
-              <h3 className="text-2xl font-serif italic text-[#2D4628]">Entrar ou Cadastrar</h3>
+
+              <h3 className="text-2xl font-serif italic text-[#2D4628]">
+                Entrar ou Cadastrar
+              </h3>
+
               <p className="text-xs text-[#2D4628]/60">
                 Acesse seus pedidos e salve seus endereços de entrega
               </p>
@@ -549,7 +566,12 @@ export const ProfileView: React.FC = () => {
 
             <div className="space-y-3 pt-2">
               <div>
-                <label className="text-[11px] font-bold text-[#2D4628]/80 block mb-1">Seu Nome</label>
+                <label className="text-[11px] font-bold text-[#2D4628]/80 block mb-1">
+                  Seu Nome
+                </label>
+                
+
+
                 <input
                   type="text"
                   placeholder="Mariana Silva"
@@ -558,8 +580,12 @@ export const ProfileView: React.FC = () => {
                   className="w-full bg-[#F7F9F6] border border-[#E2E8DF] rounded-2xl p-3 text-xs focus:outline-[#7FB069]"
                 />
               </div>
-              <div>
-                <label className="text-[11px] font-bold text-[#2D4628]/80 block mb-1">WhatsApp com DDD</label>
+
+                            <div>
+                <label className="text-[11px] font-bold text-[#2D4628]/80 block mb-1">
+                  WhatsApp com DDD
+                </label>
+
                 <input
                   type="tel"
                   placeholder="(31) 9.9189-9312"
@@ -569,30 +595,32 @@ export const ProfileView: React.FC = () => {
                 />
               </div>
 
-              {/* Login Buttons */}
-              <button
-                onClick={() => handleQuickLogin('whatsapp')}
-                className="w-full py-3.5 bg-[#7FB069] hover:bg-[#8cc474] text-white rounded-2xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-xs cursor-pointer"
-              >
-                <MessageCircle className="w-4 h-4 fill-white" />
-                <span>Continuar com WhatsApp</span>
-              </button>
+                            {/* Login Buttons */}
+              <div className="space-y-2 pt-2">
+                <button
+                  onClick={() => handleQuickLogin('whatsapp')}
+                  className="w-full py-3.5 bg-[#7FB069] hover:bg-[#8cc474] text-white rounded-2xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+                >
+                  <MessageCircle className="w-4 h-4 fill-white" />
+                  <span>Continuar com WhatsApp</span>
+                </button>
 
-              <button
-                onClick={() => handleQuickLogin('google')}
-                className="w-full py-3.5 bg-[#F7F9F6] hover:bg-[#DCE6D5] text-[#2D4628] rounded-2xl text-xs font-bold flex items-center justify-center gap-2 border border-[#E2E8DF] cursor-pointer"
-              >
-                <span>🌐 Continuar com Google</span>
-              </button>
-            </div>
+                <button
+                  onClick={() => handleQuickLogin('google')}
+                  className="w-full py-3.5 bg-[#F7F9F6] hover:bg-[#DCE6D5] text-[#2D4628] rounded-2xl text-xs font-bold flex items-center justify-center gap-2 border border-[#E2E8DF] cursor-pointer"
+                >
+                  <span>🌐 Continuar com Google</span>
+                </button>
+              </div>
 
-            <div className="pt-2 text-center">
-              <button
-                onClick={() => setIsLoginModalOpen(false)}
-                className="text-xs text-[#2D4628]/50 hover:text-[#2D4628] font-semibold cursor-pointer"
-              >
-                Fechar
-              </button>
+                                          <div className="pt-2 text-center">
+                <button
+                  onClick={() => setIsLoginModalOpen(false)}
+                  className="text-xs text-[#2D4628]/50 hover:text-[#2D4628] font-semibold cursor-pointer"
+                >
+                  Fechar
+                </button>
+              </div>
             </div>
           </div>
         </div>

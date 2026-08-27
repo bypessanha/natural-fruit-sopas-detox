@@ -417,7 +417,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return newOrder;
   };
 
-      setOrders((prev) => [newOrder, ...prev]);
+    
 
     // Salvar pedido no Supabase
     void supabase

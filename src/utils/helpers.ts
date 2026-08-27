@@ -27,8 +27,10 @@ export function buildWhatsAppOrderMessage(
   order: Order,
   settings: StoreSettings
 ): string {
-  const itemsText = order.items
-    .map(
+  console.log('PEDIDO RECEBIDO PARA WHATSAPP:', order);
+console.log('ITENS DO PEDIDO:', order?.items);
+  const itemsText = (order.items ?? [])
+  .map(
       (item, idx) =>
         `*${idx + 1}. ${item.product.name}* (Qtd: ${item.quantity})\n   ↳ Valor: ${formatCurrency(item.product.price * item.quantity)}${
           item.observation ? `\n   ↳ Obs: _${item.observation}_` : ''

@@ -15,6 +15,7 @@ import { OrderStatus } from '../types';
 
 export const OrdersView: React.FC = () => {
   const { orders, repeatOrder, setActiveTab, settings } = useApp();
+  console.log('ORDERS NO ORDERSVIEW:', orders);
   const [filter, setFilter] = useState<'todos' | 'em_andamento' | 'entregues'>('todos');
 
   const filteredOrders = orders.filter((order) => {
@@ -270,18 +271,7 @@ export const OrdersView: React.FC = () => {
                   <span className="text-[10px] font-black text-[#2D4628]/40 uppercase tracking-wider block">
                     Produtos do Pedido:
                   </span>
-              <div className="space-y-1.5 text-xs text-[#2D4628]">
-  {(order.items ?? []).map((item, idx) => (
-    <div key={idx} className="flex justify-between items-center">
-      <span className="font-medium">
-        {item.quantity}x {item.product.name} ({item.product.volume})
-      </span>
-      <span className="font-bold text-[#2D4628]">
-        {formatCurrency(item.product.price * item.quantity)}
-      </span>
-    </div>
-  ))}
-</div>
+              
 
                   <div className="pt-2 border-t border-[#E2E8DF] flex justify-between items-center text-xs">
                     <span className="font-bold text-[#2D4628]">Total do Pedido:</span>

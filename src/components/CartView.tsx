@@ -89,7 +89,7 @@ export const CartView: React.FC = () => {
     setTimeout(() => setCopiedPix(false), 3000);
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (!customerName.trim()) {
       showToast('Por favor, informe seu nome completo.', 'error');
       return;
@@ -126,17 +126,19 @@ export const CartView: React.FC = () => {
       name: customerName.trim(),
       phone: customerPhone.trim(),
     });
-
     const newOrder = createOrder(
-      {
-        name: customerName.trim(),
-        phone: customerPhone.trim(),
-        address: deliveryAddress,
-        paymentMethod,
-        changeFor: paymentMethod === 'dinheiro' && changeFor ? parseFloat(changeFor) : undefined,
-      },
-      orderNotes.trim() || undefined
-    );
+  {
+    name: customerName.trim(),
+    phone: customerPhone.trim(),
+    address: deliveryAddress,
+    paymentMethod,
+    changeFor:
+      paymentMethod === 'dinheiro' && changeFor
+        ? parseFloat(changeFor)
+        : undefined,
+  },
+  orderNotes.trim() || undefined
+);
 
     // Fire celebratory confetti!
     confetti({
@@ -147,8 +149,10 @@ export const CartView: React.FC = () => {
 
     const waText = buildWhatsAppOrderMessage(newOrder, settings);
     const waUrl = getWhatsAppLink(settings.whatsapp1, waText);
+    console.log('WHATSAPP TEXTO:', waText);
+    console.log('WHATSAPP URL:', waUrl);
+    console.log('WHATSAPP NUMERO:', settings.whatsapp1);
     window.open(waUrl, '_blank');
-
     showToast('Pedido gerado com sucesso! Abrindo WhatsApp...', 'success');
     setActiveTab('orders');
   };
