@@ -383,9 +383,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAppliedCoupon(null);
     showToast('Cupom removido.', 'info');
   };
-
-  const createOrder = (
-    customerData: {
+   const createOrder = async (
+      customerData: {
       name: string;
       phone: string;
       email?: string;
@@ -394,7 +393,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       changeFor?: number;
     },
     notes?: string
-  ): Order => {
+    ): Promise<Order> => {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    console.log('USUARIO SUPABASE:', authUser);
     const newOrder: Order = {
       id: `ord_${Date.now()}`,
       orderNumber: generateOrderNumber(),
@@ -412,13 +413,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setOrders((prev) => [newOrder, ...prev]);
 
-    void supabase
+    await supabase
       .from('orders')
       .insert({
         id: newOrder.id,
         order_number: newOrder.orderNumber,
         customer: newOrder.customer,
-        user_id: user.id !== 'usr_default' ? user.id : null,
+        user_id: authUser?.id ?? null,
         items: newOrder.items,
         subtotal: newOrder.subtotal,
         discount: newOrder.discount,

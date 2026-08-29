@@ -126,7 +126,7 @@ export const CartView: React.FC = () => {
       name: customerName.trim(),
       phone: customerPhone.trim(),
     });
-    const newOrder = createOrder(
+    const newOrder = await createOrder(
   {
     name: customerName.trim(),
     phone: customerPhone.trim(),
