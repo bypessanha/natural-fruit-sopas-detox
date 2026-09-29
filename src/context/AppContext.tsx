@@ -93,28 +93,16 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const DEFAULT_USER: UserProfile = {
   id: 'usr_default',
-  name: 'Cliente Saudável',
-  phone: '(31) 98765-4321',
-  email: 'cliente@detox.com',
+  name: '',
+  phone: '',
+  email: '',
   authProvider: 'guest',
-  addresses: [
-    {
-      id: 'addr_1',
-      label: 'Casa',
-      street: 'Av. Afonso Pena',
-      number: '1500',
-      neighborhood: 'Savassi',
-      city: 'Belo Horizonte',
-      complement: 'Apto 402',
-      referencePoint: 'Próximo à Praça da Savassi',
-      isDefault: true,
-    },
-  ],
-  defaultAddressId: 'addr_1',
-  favoriteProductIds: ['sopa-1', 'combo-semana'],
+  addresses: [],
+  favoriteProductIds: [],
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  
   // 1. Estados declarados na raiz do Provider
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
