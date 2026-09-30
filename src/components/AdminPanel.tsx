@@ -1130,7 +1130,7 @@ showToast('Produto atualizado com sucesso!', 'success');
                 />
               </div>
             </div>
-          </div>Posso
+          </div>
         </div>
       )}
     </div>
