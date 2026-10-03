@@ -277,6 +277,41 @@ useEffect(() => {
 useEffect(() => {
   loadCouponsFromSupabase();
 }, [loadCouponsFromSupabase]);
+useEffect(() => {
+  const loadOrdersFromSupabase = async () => {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('ERRO AO CARREGAR PEDIDOS:', error);
+      return;
+    }
+
+    if (data) {
+      const loadedOrders: Order[] = data.map((order: any) => ({
+        id: order.id,
+        user_id: order.user_id,
+        orderNumber: order.order_number,
+        customer: order.customer,
+        items: order.items,
+        subtotal: Number(order.subtotal),
+        discount: Number(order.discount),
+        deliveryFee: Number(order.delivery_fee),
+        total: Number(order.total),
+        status: order.status,
+        createdAt: order.created_at,
+        notes: order.notes,
+        couponCode: order.coupon_code,
+      }));
+
+      setOrders(loadedOrders);
+    }
+  };
+
+  loadOrdersFromSupabase();
+}, []);
   // Sincronização com LocalStorage
   useEffect(() => { localStorage.setItem('natural_fruit_cart', JSON.stringify(cart)); }, [cart]);
   useEffect(() => { localStorage.setItem('natural_fruit_orders', JSON.stringify(orders)); }, [orders]);
