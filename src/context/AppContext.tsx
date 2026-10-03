@@ -147,14 +147,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
 
-  const [coupons, setCoupons] = useState<Coupon[]>(() => {
-    try {
-      const saved = localStorage.getItem('natural_fruit_coupons');
-      return saved ? JSON.parse(saved) : INITIAL_COUPONS;
-    } catch {
-      return INITIAL_COUPONS;
-    }
-  });
+  const [coupons, setCoupons] = useState<Coupon[]>(INITIAL_COUPONS);
 
   const [orders, setOrders] = useState<Order[]>(() => {
     try {
@@ -246,68 +239,49 @@ useEffect(() => {
   useEffect(() => {
     loadProductsFromSupabase();
   }, [loadProductsFromSupabase]);
+ 
+  const loadCouponsFromSupabase = useCallback(async () => {
+  const { data, error } = await supabase
+    .from('coupons')
+    .select('*')
+    .order('id');
 
-  useEffect(() => {
-    const loadOrdersFromSupabase = async () => {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
+  if (error) {
+    console.error('ERRO AO CARREGAR CUPONS DO SUPABASE:', error);
+    return;
+  }
 
-      if (error) {
-        console.error('ERRO AO CARREGAR PEDIDOS:', error);
-        return;
-      }
+  if (data) {
+    const loadedCoupons: Coupon[] = data.map((coupon) => ({
+      id: coupon.id,
+      code: coupon.code,
+      description: coupon.description,
+      discountPercent:
+        coupon.discount_percent != null
+          ? Number(coupon.discount_percent)
+          : undefined,
+      discountFixed:
+        coupon.discount_fixed != null
+          ? Number(coupon.discount_fixed)
+          : undefined,
+      minOrderValue:
+        coupon.min_order_value != null
+          ? Number(coupon.min_order_value)
+          : undefined,
+      active: coupon.active,
+    }));
 
-      if (data) {
-        const loadedOrders: Order[] = data.map((order: any) => ({
-          id: order.id,
-          user_id: order.user_id,
-          orderNumber: order.order_number,
-          customer: order.customer,
-          items: order.items,
-          subtotal: Number(order.subtotal),
-          discount: Number(order.discount),
-          deliveryFee: Number(order.delivery_fee),
-          total: Number(order.total),
-          status: order.status,
-          createdAt: order.created_at,
-          notes: order.notes,
-          couponCode: order.coupon_code,
-        }));
-        setOrders(loadedOrders);
-      }
-    };
-
-    loadOrdersFromSupabase();
-
-    const ordersChannel = supabase
-      .channel('orders-status-updates')
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'orders' },
-        (payload) => {
-          const updatedOrder = payload.new as any;
-          setOrders((prev) =>
-            prev.map((order) =>
-              order.id === updatedOrder.id ? { ...order, status: updatedOrder.status } : order
-            )
-          );
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(ordersChannel);
-    };
-  }, []);
-
+    setCoupons(loadedCoupons);
+  }
+}, []);
+useEffect(() => {
+  loadCouponsFromSupabase();
+}, [loadCouponsFromSupabase]);
   // Sincronização com LocalStorage
   useEffect(() => { localStorage.setItem('natural_fruit_cart', JSON.stringify(cart)); }, [cart]);
   useEffect(() => { localStorage.setItem('natural_fruit_orders', JSON.stringify(orders)); }, [orders]);
   useEffect(() => { localStorage.setItem('natural_fruit_user', JSON.stringify(user)); }, [user]);
   useEffect(() => { localStorage.setItem('natural_fruit_coupon', JSON.stringify(appliedCoupon)); }, [appliedCoupon]);
-  useEffect(() => { localStorage.setItem('natural_fruit_coupons', JSON.stringify(coupons)); }, [coupons]);
   useEffect(() => { localStorage.setItem('natural_fruit_settings', JSON.stringify(settings)); }, [settings]);
 
   // 4. Ações da Aplicação
@@ -416,12 +390,32 @@ if (found.code === 'BEMVINDO') {
     setAppliedCoupon(null);
     showToast('Cupom removido.', 'info');
   };
-  const toggleCouponActive = (couponId: string) => {
+const toggleCouponActive = async (couponId: string) => {
+  const coupon = coupons.find((c) => c.id === couponId);
+
+  if (!coupon) {
+    showToast('Cupom não encontrado.', 'error');
+    return;
+  }
+
+  const newActive = !coupon.active;
+
+  const { error } = await supabase
+    .from('coupons')
+    .update({ active: newActive })
+    .eq('id', couponId);
+
+  if (error) {
+    console.error('ERRO AO ATUALIZAR CUPOM:', error);
+    showToast('Não foi possível atualizar o status do cupom.', 'error');
+    return;
+  }
+
   setCoupons((prev) =>
-    prev.map((coupon) =>
-      coupon.id === couponId
-        ? { ...coupon, active: !coupon.active }
-        : coupon
+    prev.map((item) =>
+      item.id === couponId
+        ? { ...item, active: newActive }
+        : item
     )
   );
 
