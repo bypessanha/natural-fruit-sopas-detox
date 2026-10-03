@@ -31,6 +31,7 @@ export const AdminPanel: React.FC = () => {
     updateProduct,
     toggleProductStock,
     coupons,
+    toggleCouponActive,
     settings,
     updateSettings,
     showToast,
@@ -106,7 +107,7 @@ useEffect(() => {
     return ord.status === statusFilter;
   });
 
-  const handlePinSubmit = async (e: React.FormEvent) => {
+const handlePinSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
   const email = adminEmail.trim();
@@ -120,27 +121,21 @@ useEffect(() => {
     return;
   }
 
- const { error } = await supabase.auth.resetPasswordForEmail(email, {
-  redirectTo: `${window.location.origin}/?reset=true`,
-});
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
 
-  if (error) {
-  console.error('ERRO AO ALTERAR SENHA:', error);
+  if (error || !data.user) {
+    console.error('ERRO NO LOGIN DO ADMIN:', error);
 
-  if (error.message.includes('New password should be different')) {
     showToast(
-      'A nova senha deve ser diferente da senha anterior. Escolha outra senha.',
+      'E-mail ou senha do administrador incorretos.',
       'error'
     );
-  } else {
-    showToast(
-      'Não foi possível alterar a senha. Tente novamente.',
-      'error'
-    );
+
+    return;
   }
-
-  return;
-}
 
   setIsAuthenticated(true);
   setIsAdmin(true);
@@ -1038,9 +1033,17 @@ showToast('Produto atualizado com sucesso!', 'success');
                   <span className="font-mono text-sm font-bold text-[#2D4628] bg-[#DCE6D5] px-3 py-1 rounded-xl">
                     {c.code}
                   </span>
-                  <span className="text-[10px] font-bold text-[#7FB069] bg-[#DCE6D5]/50 px-2.5 py-0.5 rounded-full uppercase">
-                    {c.active ? 'Ativo' : 'Inativo'}
-                  </span>
+                  <button
+  type="button"
+  onClick={() => toggleCouponActive(c.id)}
+  className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase ${
+    c.active
+      ? 'text-[#7FB069] bg-[#DCE6D5]/50'
+      : 'text-gray-500 bg-gray-100'
+  }`}
+>
+  {c.active ? 'Ativo' : 'Inativo'}
+</button>
                 </div>
                 <p className="text-xs text-[#2D4628]/80 font-medium">{c.description}</p>
                 {c.minOrderValue && (

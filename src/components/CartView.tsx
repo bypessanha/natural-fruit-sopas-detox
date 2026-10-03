@@ -73,13 +73,15 @@ export const CartView: React.FC = () => {
   const [complement, setComplement] = useState(defaultAddr.complement || '');
   const [referencePoint, setReferencePoint] = useState(defaultAddr.referencePoint || '');
 
-  const handleApplyCoupon = (e: React.FormEvent) => {
+  const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!couponInput.trim()) return;
-    const result = applyCoupon(couponInput);
-    if (result.success) {
-      setCouponInput('');
-    }
+    const result = await applyCoupon(couponInput);
+   if (result.success) {
+  setCouponInput('');
+} else {
+  showToast(result.message, 'error');
+}
   };
 
   const handleCopyPix = () => {
@@ -326,7 +328,15 @@ export const CartView: React.FC = () => {
                 {coupons.map((c) => (
                   <button
                     key={c.id}
-                    onClick={() => applyCoupon(c.code)}
+                    onClick={async () => {
+  const result = await applyCoupon(c.code);
+
+  if (result.success) {
+    setCouponInput('');
+  } else {
+    showToast(result.message, 'error');
+  }
+}}
                     className="text-[10px] font-bold px-3 py-1 rounded-xl bg-[#F7F9F6] hover:bg-[#DCE6D5] text-[#2D4628] border border-[#E2E8DF] transition-colors cursor-pointer"
                   >
                     🏷️ {c.code}
