@@ -224,7 +224,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setProducts(mappedProducts);
     }
   }, []);
+useEffect(() => {
+  const syncSupabaseUser = async () => {
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
 
+    if (!authUser) return;
+
+    setUser((prev) => ({
+      ...prev,
+      name: authUser.user_metadata?.full_name || authUser.user_metadata?.name || prev.name,
+      email: authUser.email || prev.email,
+      authProvider: 'google',
+    }));
+  };
+
+  syncSupabaseUser();
+}, []);
   // 3. Efeitos de Sincronização
   useEffect(() => {
     loadProductsFromSupabase();
@@ -348,7 +365,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const total = Math.max(0, subtotal - discount);
 
-  const applyCoupon = (code: string) => {
+  const applyCoupon = async (code: string) => {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
     const trimmed = code.trim().toUpperCase();
     const found = coupons.find((c) => c.code.toUpperCase() === trimmed && c.active);
 
@@ -361,7 +379,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         message: `Valor mínimo para este cupom é de R$ ${found.minOrderValue.toFixed(2)}.`,
       };
     }
+if (found.code === 'BEMVINDO') {
+  if (!authUser) {
+    return {
+      success: false,
+      message: 'Para usar o cupom BEMVINDO, entre ou cadastre-se primeiro.',
+    };
+  }
 
+  const { count, error } = await supabase
+    .from('orders')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', authUser.id);
+
+  if (error) {
+    console.error('ERRO AO VERIFICAR PRIMEIRO PEDIDO:', error);
+    return {
+      success: false,
+      message: 'Não foi possível verificar o primeiro pedido.',
+    };
+  }
+
+  if ((count ?? 0) > 0) {
+    return {
+      success: false,
+      message: 'O cupom BEMVINDO é válido somente para o primeiro pedido.',
+    };
+  }
+}
     setAppliedCoupon(found);
     showToast(`Cupom ${found.code} aplicado com sucesso!`, 'success');
     return { success: true, message: 'Cupom aplicado!' };
@@ -371,6 +416,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAppliedCoupon(null);
     showToast('Cupom removido.', 'info');
   };
+  const toggleCouponActive = (couponId: string) => {
+  setCoupons((prev) =>
+    prev.map((coupon) =>
+      coupon.id === couponId
+        ? { ...coupon, active: !coupon.active }
+        : coupon
+    )
+  );
+
+  showToast('Status do cupom atualizado.', 'success');
+};
    const createOrder = async (
       customerData: {
       name: string;
@@ -383,7 +439,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     notes?: string
     ): Promise<Order> => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
-    console.log('USUARIO SUPABASE:', authUser);
+        console.log('USUARIO SUPABASE:', authUser);
     const newOrder: Order = {
       id: `ord_${Date.now()}`,
       orderNumber: generateOrderNumber(),
@@ -613,6 +669,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         applyCoupon,
         removeCoupon,
         coupons,
+        toggleCouponActive,
         orders,
         createOrder,
         updateOrderStatus,
